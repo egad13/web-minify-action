@@ -1,0 +1,229 @@
+
+# Builds new version (if necessary) and tests it on pushes
+name: Build and Test
+
+on:
+  push:
+    branches:
+      main
+    tags-ignore:
+      '**'
+    paths-ignore:
+      '**.md'
+  pull_request:
+    paths-ignore:
+      '**.md'
+
+jobs:
+  gitleaks:
+    name: Gitleaks
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: gitleaks/gitleaks-action@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  eslint:
+    name: Run eslint
+    runs-on: ubuntu-latest
+    env:
+      FORCE_COLOR: 'true'
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v3
+        with:
+          node-version: '20'
+
+      - uses: actions/cache@v3
+        id: yarn-cache
+        with:
+          path: '**/node_modules'
+          key: ${{ runner.os }}-yarn-${{ hashFiles('**/yarn.lock') }}
+          restore-keys: ${{ runner.os }}-yarn-
+
+      - if: steps.yarn-cache.outputs.cache-hit != 'true'
+        run: yarn install --frozen-lockfile --no-progress --non-interactive
+
+      - run: yarn lint
+
+  dist-built:
+    name: Check distributive built state
+    runs-on: ubuntu-latest
+    outputs:
+      dist-changed: ${{ steps.state.outputs.changed }}
+    env:
+      FORCE_COLOR: 'true'
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v3
+        with:
+          node-version: '20'
+
+      - uses: actions/cache@v3
+        id: yarn-cache
+        with:
+          path: '**/node_modules'
+          key: ${{ runner.os }}-yarn-${{ hashFiles('**/yarn.lock') }}
+          restore-keys: ${{ runner.os }}-yarn-
+
+      - if: steps.yarn-cache.outputs.cache-hit != 'true'
+        run: yarn install --frozen-lockfile --no-progress --non-interactive
+
+      - run: yarn build
+
+      - uses: actions/upload-artifact@v3
+        with:
+          name: dist
+          path: ./dist/
+          retention-days: 1
+
+      - id: state
+        run: echo "changed=`git diff --diff-filter=ACMUXTR --name-only | grep dist/ > /dev/null && echo 'true' || echo 'false'`" >> $GITHUB_OUTPUT
+
+  commit-and-push-fresh-dist:
+    name: Commit and push fresh distributive
+    needs: [dist-built]
+    if: ${{ needs.dist-built.outputs.dist-changed == 'true' }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/download-artifact@v3
+        with:
+          name: dist
+          path: ./dist/
+
+      - uses: stefanzweifel/git-auto-commit-action@v4
+        with:
+          commit_message: Automatic distributive rebuild
+
+  # TODO: write some actual tests for this action :V
+  run-this-action:
+    name: Run action
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Run this action (js, default)
+        uses: ./
+        with:
+          input-dir: ./.tests/js/in
+          js: true
+      # Generated .min.js files in /in directory for the top level only
+      - name: Verify results
+        run: |
+          changes=$(git status --short -uall)
+          expected="?? .tests/js/in/depth0.min.js"
+
+          echo "expected:"$'\n'"${expected}"$'\n\n'
+          echo "actual:"$'\n'"${changes}"
+
+          if [[ "$changes" != "$expected" ]]; then
+            echo "Incorrect file structure."
+            exit 1
+          fi
+      - name: Cleanup
+        run: git checkout .
+
+      - name: Run this action (js, out dir)
+        uses: ./
+        with:
+          input-dir: ./.tests/js/in
+          output-dir: ./.tests/js/out
+          js: true
+      # Generated .min.js files in /out directory for the top level only
+      - name: Verify results
+        run: |
+          changes=$(git status --short -uall)
+          expected="?? .tests/js/out/depth0.min.js"
+
+          echo "expected:"$'\n'"${expected}"$'\n\n'
+          echo "actual:"$'\n'"${changes}"
+
+          if [[ "$changes" != "$expected" ]]; then
+            echo "Incorrect file structure."
+            exit 1
+          fi
+      - name: Cleanup
+        run: git checkout .
+
+      - name: Run this action (js, overwrite)
+        uses: ./
+        with:
+          input-dir: ./.tests/js/in
+          js: true
+          js-suffix: false
+      # Overwrote the .js files in /in directory for the top level only
+      - name: Verify results
+        run: |
+          changes=$(git status --short -uall)
+          expected=" M .tests/js/in/depth0.js"
+
+          echo "expected:"$'\n'"${expected}"$'\n\n'
+          echo "actual:"$'\n'"${changes}"
+
+          if [[ "$changes" != "$expected" ]]; then
+            echo "Incorrect file structure."
+            exit 1
+          fi
+      - name: Cleanup
+        run: git checkout .
+
+      - name: Run this action (js, recursive)
+        uses: ./
+        with:
+          input-dir: ./.tests/js/in
+          max-depth: 1
+          js: true
+      # Generated .min.js files in /in directory for top level and subfolder
+      - name: Verify results
+        run: |
+          changes=$(git status --short -uall)
+          expected="?? .tests/js/in/depth0.min.js"$'\n'
+          expected+="?? .tests/js/in/subfolder/depth1.min.js"
+
+          echo "expected:"$'\n'"${expected}"$'\n\n'
+          echo "actual:"$'\n'"${changes}"
+
+          if [[ "$changes" != "$expected" ]]; then
+            echo "Incorrect file structure."
+            exit 1
+          fi
+      - name: Cleanup
+        run: git checkout .
+
+      - name: Run this action (js, with config)
+        uses: ./
+        with:
+          input-dir: ./.tests/js/in
+          js-config: ./.tests/js/conf.json
+      # Generated .min.js files in /in directory for top level only; config file was used
+      - name: Verify results
+        run: |
+          changes=$(git status --short -uall)
+          expected="?? .tests/js/in/depth0.min.js"
+
+          echo "expected:"$'\n'"${expected}"$'\n\n'
+          echo "actual:"$'\n'"${changes}"
+
+          if [[ "$changes" != "$expected" ]]; then
+            echo "Incorrect file structure."
+            exit 1
+          fi
+
+          # test config says to drop console statements
+          if grep -Fq "console" ./.tests/js/in/depth0.min.js; then
+            echo "Config not used."
+            exit 1
+          fi
+      - name: Cleanup
+        run: git checkout .
