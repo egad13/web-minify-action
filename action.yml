@@ -1,0 +1,44 @@
+# Metadata syntax: <https://docs.github.com/en/actions/creating-actions/metadata-syntax-for-github-actions>
+
+name: 'Web Minify'
+description: 'Minify javascript files for deployment, so your project is as light as a feather. Highly configurable.'
+branding:
+  icon: feather
+  color: green
+
+runs:
+  using: 'node20'
+  main: 'dist/index.js'
+
+inputs:
+  # General
+  input-dir:
+    description: 'Source folder containing files to minify. (string)'
+    required: true
+    default: './'
+
+  output-dir:
+    description: 'Path where minified files will be saved. (string)'
+    required: false
+    default: ''
+
+  max-depth:
+    description: 'The number of levels to descend into subdirectories when scanning for source files. (non-negative integer)'
+    required: false
+    default: '0'
+
+  # JavaScript
+  js:
+    description: 'Indicates whether or not javascript files should be minified. (boolean)'
+    required: false
+    default: 'false'
+
+  js-suffix:
+    description: 'Indicates if javascript output files should have the suffix .min added after their name. (boolean)'
+    required: false
+    default: 'true'
+
+  js-config:
+    description: 'A path to a configuration file to use when minifying javascript. If specified, the js option is considered true. (string)'
+    required: false
+    default: ''
