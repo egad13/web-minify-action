@@ -63,8 +63,10 @@ try {
 	 */
 	function processJs(files) {
 		for (const dirent of files) {
-			let filePath = path.join(dirent.path, dirent.name);
+			const filePath = path.join(dirent.path, dirent.name);
 			core.info(`Minifying ${filePath}`);
+
+			let code = fs.readFileSync(filePath, "utf8");
 
 			const savePath = path.join(
 				inputs.inPath !== inputs.outPath
@@ -77,25 +79,21 @@ try {
 
 			// Replace relative imports in file if necessary
 			if (inputs.js.addSuffix) {
-				const code = fs.readFileSync(filePath, "utf8");
-				fs.writeFileSync(
-					savePath,
-					code
-						.replace(/(import.*from "\.{1,2}\/.*)\.js/g, "$1.min.js") // static
-						.replace(/(import\("\.{1,2}\/.*)\.js/g, "$1.min.js"), // dynamic
-					"utf8"
-				);
-				filePath = savePath;
+				code = code
+					.replace(/(import.*from "\.{1,2}\/.*)\.js/g, "$1.min.js")
+					.replace(/(import\("\.{1,2}\/.*)\.js/g, "$1.min.js");
 			}
 
 			// Minify
-			const result = uglifyjs.minify(filePath, inputs.js.config);
-			if (result.error) { throw result.error; }
+			const result = uglifyjs.minify(code, inputs.js.config);
 			if (result.warnings) { result.warnings.forEach(w => core.warning(w)); }
+			if (result.error) { throw result.error; }
 
 			// Save minified code, & source map if there is one.
-			fs.writeFileSync(savePath, result.code);
-			if (result.map) { fs.writeFileSync(`${savePath}.map`, result.map); }
+			fs.writeFileSync(savePath, result.code, { encoding: "utf8", flag: "w" });
+			if (result.map) {
+				fs.writeFileSync(`${savePath}.map`, result.map, { encoding: "utf8", flag: "w" });
+			}
 		}
 	}
 } catch (error) {
