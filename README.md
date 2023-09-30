@@ -8,7 +8,9 @@ A GitHub action that minifies javascript files for deployment, so your project i
 To get things done, this action relies on:
 - [UglifyJS][uglifyjs].
 
-For example, to minify all `.js` files in the `src` directory in place:
+## Basic Usage
+
+To minify all `.js` files in the `src` directory in place:
 ```yaml
 jobs:
   uglify:
@@ -55,10 +57,6 @@ The following input variables can be configured:
 
 The config file passed to the `js-config` option should be a json file containing an UglifyJS config object. See the [UglifyJS repo][uglifyjs_conf] for details on what options are available and how to structure the config.
 
-There are some options which act differently than usual due to how the action works. In particular:
-- `sourceMap.filename`:
-- `sourceMap.url`:
-
 The default config if none is provided is:
 ```json
 {
@@ -70,9 +68,6 @@ The default config if none is provided is:
   }
 }
 ```
-
-## Examples
-
 ## Support
 
 [![Issues][badge_issues]][link_issues]
@@ -95,7 +90,7 @@ This is open-sourced software licensed under the [MIT License][link_license].
 [link_create_issue]:https://github.com/egad13/web-minify-action/issues/new
 [link_pulls]:https://github.com/egad13/web-minify-action/pulls
 
-[badge_build]:https://img.shields.io/github/actions/workflow/status/egad13/web-minify-action/tests.yml?branch=main&maxAge=30
+[badge_build]:https://img.shields.io/github/actions/workflow/status/egad13/web-minify-action/build.yml?branch=main&maxAge=30
 [badge_release_version]:https://img.shields.io/github/release/egad13/web-minify-action.svg?maxAge=30
 [badge_license]:https://img.shields.io/github/license/egad13/web-minify-action.svg?longCache=true
 [badge_release_date]:https://img.shields.io/github/release-date/egad13/web-minify-action.svg?maxAge=180

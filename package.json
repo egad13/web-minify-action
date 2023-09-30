@@ -2,7 +2,7 @@
   "name": "web-minify-action",
   "version": "1.0.0",
   "description": "A GitHub action that minifies javascript files for deployment, so your project is as light as a feather.",
-  "main": "dist/index.js",
+  "main": "src/index.js",
   "scripts": {
     "lint": "eslint src",
     "build": "ncc build src/index.js -o dist --source-map --minify --no-cache"
