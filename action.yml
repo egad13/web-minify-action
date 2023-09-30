@@ -23,7 +23,7 @@ inputs:
     default: ''
 
   max-depth:
-    description: 'The number of levels to descend into subdirectories when scanning for source files. (non-negative integer)'
+    description: 'The number of levels to descend into subdirectories when scanning for source files. (integer; min 0, max 10)'
     required: false
     default: '0'
 

@@ -41,7 +41,7 @@ try {
 	 */
 	function processFiles(dirPath, depth = 0) {
 		const dir = fs.readdirSync(dirPath, { withFileTypes: true });
-		const jsFiles = dir.filter(dirent => dirent.isFile() && path.extname(dirent.name) === '.js');
+		const jsFiles = dir.filter(dirent => dirent.isFile() && path.extname(dirent.name) === ".js");
 		const subDirs = dir.filter(dirent => dirent.isDirectory());
 
 		// MINIFICATION ///////////////////////////////////////////////////////////
@@ -81,8 +81,8 @@ try {
 				fs.writeFileSync(
 					savePath,
 					code
-						.replace(/(import.*from "\.{1,2}\/.*)\.js/g, "$1.min.js") //static
-						.replace(/(import\("\.{1,2}\/.*)\.js)/g, "$1.min.js"), //dynamic
+						.replace(/(import.*from "\.{1,2}\/.*)\.js/g, "$1.min.js") // static
+						.replace(/(import\("\.{1,2}\/.*)\.js/g, "$1.min.js"), // dynamic
 					"utf8"
 				);
 				filePath = savePath;
@@ -95,7 +95,7 @@ try {
 
 			// Save minified code, & source map if there is one.
 			fs.writeFileSync(savePath, result.code);
-			if (result.map) { fs.writeFileSync(savePath + ".map", result.map); }
+			if (result.map) { fs.writeFileSync(`${savePath}.map`, result.map); }
 		}
 	}
 } catch (error) {
